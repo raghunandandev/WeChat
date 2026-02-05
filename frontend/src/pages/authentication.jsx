@@ -76,7 +76,7 @@ export default function Authentication() {
                     sm={4}
                     md={7}
                     sx={{
-                        backgroundImage: 'url(https://source.unsplash.com/random?wallpapers)',
+                        backgroundImage: 'url(https://static.vecteezy.com/system/resources/previews/025/441/457/non_2x/mobile-chat-app-online-communication-social-networking-messages-tiny-people-chatting-in-mobile-smartphone-and-big-speech-bubbles-modern-flat-cartoon-style-illustration-on-white-background-vector.jpg)',
                         backgroundRepeat: 'no-repeat',
                         backgroundColor: (t) =>
                             t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900],
