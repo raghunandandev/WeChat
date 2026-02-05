@@ -1,6 +1,6 @@
 let IS_PROD = true;
 const server = IS_PROD ?
-    "https://wechatsocial.onrender.com" :
+    "https://wechat-7bq8.onrender.com" :
 
     "http://localhost:8000"
 
