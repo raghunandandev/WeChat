@@ -116,26 +116,44 @@ export default function VideoMeetComponent() {
         } catch (e) { console.log(e) }
 
         window.localStream = stream
-        localVideoref.current.srcObject = stream
+        if (localVideoref.current) {
+            localVideoref.current.srcObject = stream
+        }
 
+        // Replace tracks in all existing peer connections
         for (let id in connections) {
             if (id === socketIdRef.current) continue
 
-            connections[id].addStream(window.localStream)
+            const peerConnection = connections[id]
+            
+            // Remove old tracks
+            peerConnection.getSenders().forEach((sender) => {
+                peerConnection.removeTrack(sender)
+            })
 
-            connections[id].createOffer().then((description) => {
+            // Add new tracks
+            stream.getTracks().forEach((track) => {
+                peerConnection.addTrack(track, stream)
+            })
+
+            // Renegotiate by sending a new offer
+            peerConnection.createOffer().then((description) => {
                 console.log(description)
-                connections[id].setLocalDescription(description)
+                peerConnection.setLocalDescription(description)
                     .then(() => {
-                        socketRef.current.emit('signal', id, JSON.stringify({ 'sdp': connections[id].localDescription }))
+                        socketRef.current.emit('signal', id, JSON.stringify({ 'sdp': peerConnection.localDescription }))
                     })
                     .catch(e => console.log(e))
-            })
+            }).catch(e => console.log(e))
         }
 
         stream.getTracks().forEach(track => track.onended = () => {
-            setVideo(false);
-            setAudio(false);
+            const trackKind = track.kind
+            if (trackKind === 'video') {
+                setVideo(false)
+            } else if (trackKind === 'audio') {
+                setAudio(false)
+            }
 
             try {
                 let tracks = localVideoref.current.srcObject.getTracks()
@@ -144,10 +162,13 @@ export default function VideoMeetComponent() {
 
             let blackSilence = (...args) => new MediaStream([black(...args), silence()])
             window.localStream = blackSilence()
-            localVideoref.current.srcObject = window.localStream
+            if (localVideoref.current) {
+                localVideoref.current.srcObject = window.localStream
+            }
 
             for (let id in connections) {
                 connections[id].addStream(window.localStream)
+
 
                 connections[id].createOffer().then((description) => {
                     connections[id].setLocalDescription(description)
@@ -162,7 +183,10 @@ export default function VideoMeetComponent() {
 
     const getUserMedia = useCallback(() => {
         if ((video && videoAvailable) || (audio && audioAvailable)) {
-            navigator.mediaDevices.getUserMedia({ video: video, audio: audio })
+            navigator.mediaDevices.getUserMedia({ 
+                video: video ? { width: { min: 640, ideal: 1280 }, height: { min: 480, ideal: 720 } } : false, 
+                audio: audio ? { echoCancellation: true, noiseSuppression: true, autoGainControl: true } : false
+            })
                 .then(getUserMediaSuccess)
                 .then((stream) => { })
                 .catch((e) => console.log(e))
@@ -198,20 +222,33 @@ export default function VideoMeetComponent() {
         } catch (e) { console.log(e) }
 
         window.localStream = stream
-        localVideoref.current.srcObject = stream
+        if (localVideoref.current) {
+            localVideoref.current.srcObject = stream
+        }
 
         for (let id in connections) {
             if (id === socketIdRef.current) continue
 
-            connections[id].addStream(window.localStream)
+            const peerConnection = connections[id]
 
-            connections[id].createOffer().then((description) => {
-                connections[id].setLocalDescription(description)
+            // Remove old tracks
+            peerConnection.getSenders().forEach((sender) => {
+                peerConnection.removeTrack(sender)
+            })
+
+            // Add new video track from screen share
+            stream.getTracks().forEach((track) => {
+                peerConnection.addTrack(track, stream)
+            })
+
+            // Renegotiate
+            peerConnection.createOffer().then((description) => {
+                peerConnection.setLocalDescription(description)
                     .then(() => {
-                        socketRef.current.emit('signal', id, JSON.stringify({ 'sdp': connections[id].localDescription }))
+                        socketRef.current.emit('signal', id, JSON.stringify({ 'sdp': peerConnection.localDescription }))
                     })
                     .catch(e => console.log(e))
-            })
+            }).catch(e => console.log(e))
         }
 
         stream.getTracks().forEach(track => track.onended = () => {
@@ -222,19 +259,15 @@ export default function VideoMeetComponent() {
                 tracks.forEach(track => track.stop())
             } catch (e) { console.log(e) }
 
-            let blackSilence = (...args) => new MediaStream([black(...args), silence()])
-            window.localStream = blackSilence()
-            localVideoref.current.srcObject = window.localStream
-
+            // Resume normal camera + audio
             getUserMedia()
-
         })
     }, [getUserMedia])
 
     const getDislayMedia = useCallback(() => {
         if (screen) {
             if (navigator.mediaDevices.getDisplayMedia) {
-                navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+                navigator.mediaDevices.getDisplayMedia({ video: true, audio: false })
                     .then(getDislayMediaSuccess)
                     .catch((e) => console.log(e))
             }
@@ -525,6 +558,7 @@ export default function VideoMeetComponent() {
                                         }
                                     }}
                                     autoPlay
+                                    playsInline
                                 >
                                 </video>
                             </div>
