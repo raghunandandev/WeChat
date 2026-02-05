@@ -415,9 +415,6 @@ export default function VideoMeetComponent() {
     let closeChat = () => {
         setModal(false);
     }
-    let handleMessage = (e) => {
-        setMessage(e.target.value);
-    }
 
     const addMessage = (data, sender, socketIdSender) => {
         setMessages((prevMessages) => [
