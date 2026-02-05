@@ -129,7 +129,7 @@ export default function VideoMeetComponent() {
         }
 
 
-    }, [video, audio])
+    }, [video, audio, getUserMedia])
     let getMedia = () => {
         setVideo(videoAvailable);
         setAudio(audioAvailable);
@@ -395,7 +395,7 @@ export default function VideoMeetComponent() {
         if (screen !== undefined) {
             getDislayMedia();
         }
-    }, [screen])
+    }, [screen, getDislayMedia])
     let handleScreen = () => {
         setScreen(!screen);
     }
@@ -412,9 +412,10 @@ export default function VideoMeetComponent() {
         setModal(true);
         setNewMessages(0);
     }
-    let closeChat = () => {
-        setModal(false);
-    }
+    // Chat functionality - closing handled by modal state
+    // let closeChat = () => {
+    //     setModal(false);
+    // }
 
     const addMessage = (data, sender, socketIdSender) => {
         setMessages((prevMessages) => [
